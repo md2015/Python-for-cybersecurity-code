@@ -1,0 +1,15 @@
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.log
+baseline.json
+scan_results.txt
+capture.txt
+threat_report.txt
+web_scan_report.txt
+osint_report_*.txt
+subdomains_*.txt
+passwords.txt
+.DS_Store
+.vscode/
