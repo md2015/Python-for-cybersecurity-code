@@ -9,26 +9,31 @@ def check_password(password):
     if len(password) >= 8:
         score += 1
     else:
-        issues.append("Too short - use at least 8 characters.")
+        issues.append("Too short: use at least 8 characters.")
 
-    has_upper = any(c.isupper() for c in password)
-    if has_upper:
+    if any(character.isupper() for character in password):
         score += 1
     else:
-        issues.append("No uppercase letters - add at least one capital.")
+        issues.append(
+            "No uppercase letters: add at least "
+            "one capital letter."
+        )
 
-    has_digit = any(c.isdigit() for c in password)
-    if has_digit:
+    if any(character.isdigit() for character in password):
         score += 1
     else:
-        issues.append("No numbers - add at least one digit.")
+        issues.append("No numbers: add at least one digit.")
 
     special_chars = "!@#$%^&*()_+-=[]{}|;:,.<>?"
-    has_special = any(c in special_chars for c in password)
-    if has_special:
+    if any(
+        character in special_chars
+        for character in password
+    ):
         score += 1
     else:
-        issues.append("No special characters - try ! @ # or $.")
+        issues.append(
+            "No special characters: try !, @, #, or $."
+        )
 
     if len(password) >= 12:
         score += 1
@@ -45,37 +50,43 @@ def get_verdict(score):
         return "FAIR"
     elif score == 4:
         return "STRONG"
-    else:
-        return "VERY STRONG"
+    return "VERY STRONG"
 
 
 def print_results(score, issues):
-    verdict = get_verdict(score)
     print(f"Score: {score} / 5")
-    print(f"Verdict: {verdict}")
-    print()
+    print(f"Verdict: {get_verdict(score)}")
 
     if issues:
         print("Issues found:")
         for issue in issues:
-            print(f" - {issue}")
+            print(f"  - {issue}")
     else:
         print("Excellent. No issues found.")
 
     print()
 
 
-print("=" * 40)
-print(" Password Strength Checker")
-print("=" * 40)
-print("Type 'quit' to exit.\n")
+def main():
+    print("=" * 40)
+    print(" Password Strength Checker")
+    print("=" * 40)
+    print("Type 'quit' to exit.\n")
 
-while True:
-    password = input("Enter a password: ")
+    while True:
+        try:
+            password = input("Enter a password: ")
+        except (EOFError, KeyboardInterrupt):
+            print("\nGoodbye.")
+            break
 
-    if password.lower() == "quit":
-        print("Goodbye.")
-        break
+        if password.lower() == "quit":
+            print("Goodbye.")
+            break
 
-    score, issues = check_password(password)
-    print_results(score, issues)
+        score, issues = check_password(password)
+        print_results(score, issues)
+
+
+if __name__ == "__main__":
+    main()

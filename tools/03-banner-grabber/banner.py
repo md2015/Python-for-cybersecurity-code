@@ -1,29 +1,35 @@
 # banner.py
-# Grabs service banners to identify software and version information
+# Passively reads service banners from authorized TCP services
 
 import socket
 
 
-def grab_banner(ip, port):
+def grab_banner(host, port, timeout=2):
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(2)
-        s.connect((ip, port))
-        banner = s.recv(1024).decode("utf-8", errors="ignore").strip()
-        s.close()
-        return banner
-    except Exception:
+        with socket.create_connection(
+            (host, port), timeout=timeout
+        ) as sock:
+            sock.settimeout(timeout)
+            data = sock.recv(1024)
+        banner = data.decode("utf-8", errors="replace").strip()
+        return banner or None
+    except (OSError, TimeoutError):
         return None
 
 
-target = "127.0.0.1"
-ports_to_check = [21, 22, 25, 80, 110, 143]
+def main():
+    target = "127.0.0.1"
+    ports_to_check = [21, 22, 25, 80, 110, 143]
 
-for port in ports_to_check:
-    print(f"Checking port {port}...")
-    banner = grab_banner(target, port)
+    for port in ports_to_check:
+        print(f"Checking port {port}...")
+        banner = grab_banner(target, port)
 
-    if banner:
-        print(f" Banner: {banner[:100]}")
-    else:
-        print(" No banner received")
+        if banner:
+            print(f"  Banner: {banner[:100]}")
+        else:
+            print("  No passive banner received")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,10 +1,9 @@
 # sniffer.py
-# Live packet sniffer with protocol labeling and capture file output
+# Authorized packet sniffer with text summaries and PCAP output
 
 import datetime
 
-from scapy.all import ICMP, IP, TCP, UDP, sniff
-
+from scapy.all import ICMP, IP, TCP, UDP, sniff, wrpcap
 
 PORT_LABELS = {
     21: "FTP",
@@ -18,50 +17,98 @@ PORT_LABELS = {
 }
 
 COUNTS = {"TCP": 0, "UDP": 0, "ICMP": 0, "Other": 0}
-LOGFILE = "capture.txt"
+TEXT_LOG = "capture.txt"
+PCAP_FILE = "capture.pcap"
 PACKET_MAX = 50
 
 
-def label_port(port):
-    return PORT_LABELS.get(port, "Unknown")
+def label_service(source_port, destination_port):
+    if destination_port in PORT_LABELS:
+        return PORT_LABELS[destination_port]
+    if source_port in PORT_LABELS:
+        return PORT_LABELS[source_port]
+    return "Unknown"
 
 
 def handle_packet(packet):
     if IP not in packet:
         return
 
-    src = packet[IP].src
-    dst = packet[IP].dst
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    source_ip = packet[IP].src
+    destination_ip = packet[IP].dst
+    timestamp = datetime.datetime.now().strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
 
     if TCP in packet:
-        proto = "TCP"
-        sport = packet[TCP].sport
-        dport = packet[TCP].dport
+        protocol = "TCP"
+        source_port = packet[TCP].sport
+        destination_port = packet[TCP].dport
     elif UDP in packet:
-        proto = "UDP"
-        sport = packet[UDP].sport
-        dport = packet[UDP].dport
+        protocol = "UDP"
+        source_port = packet[UDP].sport
+        destination_port = packet[UDP].dport
     elif ICMP in packet:
-        proto = "ICMP"
-        sport = "-"
-        dport = "-"
+        protocol = "ICMP"
+        source_port = "-"
+        destination_port = "-"
     else:
-        proto = "Other"
-        sport = "-"
-        dport = "-"
+        protocol = "Other"
+        source_port = "-"
+        destination_port = "-"
 
-    COUNTS[proto] += 1
-    service = label_port(dport) if isinstance(dport, int) else "-"
-    line = f"{timestamp} {proto} {src}:{sport} -> {dst}:{dport} ({service})"
+    COUNTS[protocol] += 1
+
+    if (
+        isinstance(source_port, int)
+        and isinstance(destination_port, int)
+    ):
+        service = label_service(source_port, destination_port)
+    else:
+        service = "-"
+
+    line = (
+        f"{timestamp} {protocol} "
+        f"{source_ip}:{source_port} -> "
+        f"{destination_ip}:{destination_port} ({service})"
+    )
     print(line)
 
-    with open(LOGFILE, "a") as f:
-        f.write(line + "\n")
+    with open(TEXT_LOG, "a", encoding="utf-8") as log:
+        log.write(line + "\n")
 
 
-print(f"Capturing {PACKET_MAX} packets. Press Ctrl+C to stop.")
-sniff(prn=handle_packet, count=PACKET_MAX, store=False)
-print("Summary:")
-for proto, count in COUNTS.items():
-    print(f"{proto}: {count}")
+def main():
+    print(
+        f"Capturing {PACKET_MAX} packets. "
+        "Press Ctrl+C to stop."
+    )
+
+    try:
+        packets = sniff(
+            prn=handle_packet,
+            count=PACKET_MAX,
+            store=True,
+        )
+    except PermissionError:
+        print(
+            "Packet capture requires administrator "
+            "or root privileges."
+        )
+        return
+    except KeyboardInterrupt:
+        print("\nCapture stopped by user.")
+        return
+
+    wrpcap(PCAP_FILE, packets)
+
+    print("Summary:")
+    for protocol, count in COUNTS.items():
+        print(f"{protocol}: {count}")
+
+    print(f"Text summary saved as {TEXT_LOG}")
+    print(f"Packet capture saved as {PCAP_FILE}")
+
+
+if __name__ == "__main__":
+    main()

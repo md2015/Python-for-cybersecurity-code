@@ -1,15 +1,35 @@
-venv/
-.venv/
+# Python
 __pycache__/
 *.py[cod]
-*.log
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Generated reports and captures
 baseline.json
 scan_results.txt
-capture.txt
-threat_report.txt
-web_scan_report.txt
 osint_report_*.txt
+generated_passwords.txt
+threat_report.txt
 subdomains_*.txt
+capture.txt
+capture.pcap
+web_scan_report.txt
+
+# Secrets and private data
+.env
+*.key
+*.pem
+secrets.txt
 passwords.txt
-.DS_Store
-.vscode/
